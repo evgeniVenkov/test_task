@@ -37,6 +37,8 @@ def where_dict(rows: list[dict[str, Any]], where: str) -> list[dict[str, Any]]:
         if op in where:
             column, value = where.split(op, 1)
             column, value = column.strip(), value.strip()
+            if any(o in value for o in ['>=', '<=', '>', '<', '=']):
+                raise ValueError("Неверный формат: множественные операторы")
             break
     else:
         raise ValueError("Неверный формат")
@@ -68,7 +70,7 @@ def aggregate(rows: list[dict[str, Any]], agg: str) -> list[dict[str, Any]] | No
         colum, op = agg.split('=', 1)
         op, colum = op.strip(), colum.strip()
     except ValueError:
-        raise ValueError("Не верно передана агрегация!\nПример: операция=колонка")
+        raise ValueError("Не верно передана агрегация!\nПример: колонка=операция")
 
     values = []
     for row in rows:

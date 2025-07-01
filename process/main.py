@@ -1,5 +1,4 @@
 import argparse
-import sys
 import work_csv
 from tabulate import tabulate
 

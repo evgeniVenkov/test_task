@@ -20,7 +20,6 @@ def main():
         result = work_csv.where_dict(result, args.where)
     if args.aggregate:
         result = work_csv.aggregate(result, args.aggregate)
-        print(result)
     table = tabulate(result, headers="keys", tablefmt="grid")
     print(table)
 if __name__ == "__main__":

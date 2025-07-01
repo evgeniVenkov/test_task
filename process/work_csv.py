@@ -1,6 +1,11 @@
 import csv
-from typing import List, Any
-
+from typing import Any
+OPERATIONS = {
+        "avg": lambda vals: sum(vals) / len(vals) if vals else 0,
+        "min": min,
+        "max": max,
+        # Можно легко добавить новые операции здесь:
+    }
 
 def read_csv(filepath: str) -> list[dict[str, Any]]:
     """
@@ -17,6 +22,11 @@ def read_csv(filepath: str) -> list[dict[str, Any]]:
 
 
 def check_is_str(value: str) -> str | float | int:
+    '''
+    Преобразует строку в число, если возможно, иначе возвращает саму строку.
+    :param value:
+    :return: str | float | int
+    '''
     try:
         return int(value)
     except ValueError:
@@ -26,13 +36,24 @@ def check_is_str(value: str) -> str | float | int:
             return value
 
 
-def check_columns(row: dict[str, Any], colum):
+def check_columns(row: dict[str, Any], colum: str):
+    '''
+    Проверяет есть ли колонка в словаре
+    :param row: словарь
+    :param colum: наименование колонки
+    '''
     check = row.get(colum)
     if check is None:
         raise KeyError("Колонка не найдена")
 
 
-def where_dict(rows: list[dict[str, Any]], where: str) -> list[dict[str, Any]]:
+def get_col_val_op(where: str) -> tuple[Any, Any, str]:
+    """
+        Парсит условие фильтра (например, 'price>=200') и возвращает
+        кортеж: (колонка, значение, оператор).
+
+        Выбрасывает ValueError при неправильном формате или лишних операторах.
+        """
     for op in ['>=', '<=', '>', '<', '=']:
         if op in where:
             column, value = where.split(op, 1)
@@ -42,6 +63,15 @@ def where_dict(rows: list[dict[str, Any]], where: str) -> list[dict[str, Any]]:
             break
     else:
         raise ValueError("Неверный формат")
+    return column, value, op
+
+
+def where_dict(rows: list[dict[str, Any]], where: str) -> list[dict[str, Any]]:
+    """
+       Фильтрует список словарей по условию вида 'column operator value'.
+       Возвращает строки, удовлетворяющие условию.
+    """
+    column, value, op = get_col_val_op(where)
 
     value = check_is_str(value)
 
@@ -66,6 +96,18 @@ def where_dict(rows: list[dict[str, Any]], where: str) -> list[dict[str, Any]]:
 
 
 def aggregate(rows: list[dict[str, Any]], agg: str) -> list[dict[str, Any]] | None:
+    """
+       Выполняет агрегацию по указанной колонке и операции.
+
+       Парсит строку агрегации формата "column=operation".
+       Проверяет, что колонка числовая.
+       Вычисляет агрегацию с помощью словаря OPERATIONS.
+
+       :param rows: список словарей
+       :param agg: строка агрегации, например "price=avg"
+       :return: список с одним словарём {operation: результат}, или None если нет данных
+
+    """
     try:
         colum, op = agg.split('=', 1)
         op, colum = op.strip(), colum.strip()
@@ -82,14 +124,10 @@ def aggregate(rows: list[dict[str, Any]], agg: str) -> list[dict[str, Any]] | No
 
     if not values:
         return None
-    match op:
-        case "avg":
-            result = sum(values) / len(values)
-        case "min":
-            result = min(values)
-        case "max":
-            result = max(values)
-        case _:
-            raise ValueError("неизвестная операция")
+
+    if op not in OPERATIONS:
+        raise ValueError(f"Неизвестная операция агрегации: {op}")
+
+    result = OPERATIONS[op](values)
 
     return [{op: result}]
